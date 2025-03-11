@@ -1,0 +1,169 @@
+โค้ดนี้เป็นโปรแกรมที่ใช้สำหรับจัดการข้อมูลนักศึกษา โดยใช้ Windows Forms สำหรับสร้างอินเทอร์เฟซผู้ใช้ (UI) และมีฟังก์ชันต่าง ๆ สำหรับการเพิ่มข้อมูลนักศึกษาและที่ปรึกษา รวมถึงการค้นหาและแสดงข้อมูลนักศึกษาในรูปแบบต่าง ๆ ต่อไปนี้คือลำดับการทำงานของโค้ดพร้อมการอธิบายแต่ละส่วน:
+
+1. การประกาศตัวแปร
+csharp
+Copy
+Edit
+private List<Student> students = new List<Student>();
+private List<Advisor> advisors = new List<Advisor>();
+students: ตัวแปรนี้เป็น List<Student> ใช้เก็บข้อมูลของนักศึกษาทั้งหมดในระบบ
+advisors: ตัวแปรนี้เป็น List<Advisor> ใช้เก็บข้อมูลของที่ปรึกษาทั้งหมดในระบบ
+
+2. การโหลดข้อมูลที่ปรึกษา (LoadAdvisors)
+csharp
+Copy
+Edit
+private void LoadAdvisors()
+{
+    advisors.Add(new Advisor("Dr.Kham", "CIS"));
+    CmbAdvisor.Items.AddRange(advisors.Select(a => a.Name).ToArray());
+}
+ในฟังก์ชันนี้ จะมีการเพิ่มที่ปรึกษาชื่อ "Dr.Kham" และภาควิชา "CIS" เข้าไปใน advisors list
+จากนั้นจะนำชื่อที่ปรึกษาทั้งหมดมาแสดงใน ComboBox (CmbAdvisor) โดยใช้ Select เพื่อเลือกชื่อที่ปรึกษาจาก advisors แล้วแปลงเป็น Array และเพิ่มลงใน ComboBox
+
+3. การอัพเดตรายการนักศึกษา (UpdateStudentList)
+csharp
+Copy
+Edit
+private void UpdateStudentList()
+{
+    dgvStudents.Rows.Clear();
+    lstStuden.Items.Clear();
+    foreach (var student in students)
+    {
+        dgvStudents.Rows.Add(student.ID, student.Name, student.Major, student.Grade, student.Advisor.Name);
+        lstStuden.Items.Add(student.Name);
+    }
+}
+ฟังก์ชันนี้จะทำการอัพเดตข้อมูลนักศึกษาใน DataGridView (dgvStudents) และ ListBox (lstStuden)
+โดยจะล้างข้อมูลเดิมในทั้งสองคอนโทรลล์ (Rows.Clear() และ Items.Clear()) ก่อน จากนั้นทำการวนลูปเพิ่มข้อมูลของนักศึกษาทุกคนใน students ไปยัง dgvStudents และ lstStuden
+
+4. การเพิ่มที่ปรึกษา (btAddAdvisor_Click)
+csharp
+Copy
+Edit
+private void btAddAdvisor_Click(object sender, EventArgs e)
+{
+    string advisorName = tb_AdvisorName.Text;
+    string advisorDepartment = tb_AdvisorMajor.Text;
+
+    if (string.IsNullOrWhiteSpace(advisorName) || string.IsNullOrWhiteSpace(advisorDepartment))
+    {
+        MessageBox.Show("Please fill in all the advisor information.");
+        return;
+    }
+
+    Advisor newAdvisor = new Advisor(advisorName, advisorDepartment);
+    advisors.Add(newAdvisor);
+    CmbAdvisor.Items.Add(newAdvisor.Name);
+    MessageBox.Show("Advisor added successfully");
+    tb_AdvisorName.Clear();
+    tb_AdvisorMajor.Clear();
+}
+ฟังก์ชันนี้จะใช้เมื่อผู้ใช้คลิกปุ่ม "Add Advisor"
+จะรับข้อมูลจากช่องกรอกชื่อที่ปรึกษา (tb_AdvisorName) และภาควิชา (tb_AdvisorMajor)
+ถ้าข้อมูลไม่ครบหรือกรอกไม่ถูกต้องจะแสดงข้อความเตือน
+ถ้าข้อมูลถูกต้อง จะสร้างที่ปรึกษาใหม่ (Advisor) และเพิ่มเข้าไปใน advisors list และ ComboBox (CmbAdvisor)
+
+5. การเพิ่มนักศึกษา (btAddSt_Click)
+csharp
+Copy
+Edit
+private void btAddSt_Click(object sender, EventArgs e)
+{
+    string id = tbStId.Text;
+    string name = tbStName.Text;
+    string major = tbStMajor.Text;
+    double grade;
+
+    if (!double.TryParse(tbGrade.Text, out grade))
+    {
+        MessageBox.Show("Please enter a valid grade.");
+        return;
+    }
+
+    if (CmbAdvisor.SelectedItem == null)
+    {
+        MessageBox.Show("Please select an advisor.");
+        return;
+    }
+
+    if (students.Any(s => s.ID == id))
+    {
+        MessageBox.Show("Student ID already exists. Please enter a new ID.");
+        return;
+    }
+
+    string advisorName = CmbAdvisor.SelectedItem.ToString();
+    Advisor advisor = advisors.FirstOrDefault(a => a.Name == advisorName);
+
+    Student student = new Student(id, name, major, grade, advisor);
+    students.Add(student);
+    advisor.AddStudent(student);
+
+    UpdateStudentList();
+    MessageBox.Show("Student added successfully.");
+    tbStId.Clear();
+    tbStName.Clear();
+    tbStMajor.Clear();
+    tbGrade.Clear();
+}
+ฟังก์ชันนี้จะใช้เมื่อผู้ใช้คลิกปุ่ม "Add Student"
+รับข้อมูลจากช่องกรอกต่าง ๆ เช่น รหัสนักศึกษา (tbStId), ชื่อนักศึกษา (tbStName), สาขาวิชา (tbStMajor), เกรด (tbGrade), และที่ปรึกษา (จาก CmbAdvisor)
+ถ้าข้อมูลไม่ถูกต้อง เช่น เกรดไม่เป็นตัวเลข หรือไม่เลือกที่ปรึกษา หรือรหัสนักศึกษาอาจซ้ำกับในระบบ จะมีข้อความเตือน
+ถ้าข้อมูลครบถ้วนและถูกต้อง จะเพิ่มนักศึกษาใน students list และที่ปรึกษาจะรับนักศึกษาไปดูแล
+
+6. การค้นหานักศึกษา (btSearch_Click_1)
+csharp
+Copy
+Edit
+private void btSearch_Click_1(object sender, EventArgs e)
+{
+    string searchText = tbSearchStudent.Text.ToLower();
+    var filteredStudents = students.Where(s => s.ID.ToLower().Contains(searchText) || s.Name.ToLower().Contains(searchText)).ToList();
+
+    dgvStudents.Rows.Clear();
+
+    if (filteredStudents.Count == 000)
+    {
+        MessageBox.Show("No data found.", "Search Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+    if (filteredStudents.Count > 0)
+    {
+        MessageBox.Show("Data found", "Search Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+        foreach (var student in filteredStudents)
+        {
+            dgvStudents.Rows.Add(student.ID, student.Name, student.Major, student.Grade, student.Advisor.Name);
+        }
+    }
+    else
+    {
+        foreach (var student in filteredStudents)
+        {
+            dgvStudents.Rows.Add(student.ID, student.Name, student.Major, student.Grade, student.Advisor.Name);
+        }
+    }
+}
+ฟังก์ชันนี้จะค้นหานักศึกษาตามรหัสหรือชื่อที่พิมพ์ในช่องค้นหา (tbSearchStudent)
+ถ้ามีผลลัพธ์ จะแสดงข้อมูลนักศึกษาใน DataGridView และแจ้งผลการค้นหาผ่าน MessageBox
+
+7. การแสดงข้อมูลนักศึกษาที่เลือก (lstStuden_SelectedIndexChanged และ dgvStudents_SelectionChanged)
+เมื่อผู้ใช้เลือกนักศึกษาใน ListBox หรือ DataGridView ข้อมูลของนักศึกษาจะถูกแสดงใน Label ต่าง ๆ เช่น รหัสนักศึกษา, ชื่อ, สาขาวิชา, เกรด, และที่ปรึกษา
+
+8. การค้นหานักศึกษาที่มีเกรดสูงสุด (btTopSt_Click)
+csharp
+Copy
+Edit
+private void btTopSt_Click(object sender, EventArgs e)
+{
+    if (students.Count == 0)
+    {
+        MessageBox.Show("No students recorded.");
+        return;
+    }
+
+    Student topStudent = students.OrderByDescending(s => s.Grade).FirstOrDefault();
+    MessageBox.Show($"Top Student: {topStudent.Name} Grade: {topStudent.Grade} ");
+}
+ฟังก์ชันนี้จะค้นหานักศึกษาที่มีเกรดสูงสุดจาก students และแสดงชื่อและเกรดของนักศึกษาคนนั้น
